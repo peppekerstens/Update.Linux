@@ -137,6 +137,40 @@ See [`Examples\`](Examples/) for ready-to-run scripts:
 
 ---
 
+## How we built this
+
+### Why this module exists
+
+PSWindowsUpdate is the de-facto standard for Windows update management in PowerShell automation. It's widely used in scripts, runbooks, and DSC configurations. None of it works on Linux because `apt` is a completely different beast. The goal of `Update.Linux` is to let those same scripts run unmodified on Linux — `Get-WindowsUpdate` becomes an alias, `Install-WindowsUpdate` triggers `apt-get upgrade`. No platform branching required.
+
+### Tool choices
+
+**`apt list --upgradable`** lists available updates in a parseable format. The output is consistent enough to extract package name, version, and repository source from each line. We use `2>/dev/null` to suppress the "Listing..." progress noise that `apt` emits to stderr.
+
+**`apt-get upgrade`** (not `apt upgrade`) is used for installs because `apt-get` has a stable, scriptable interface and reliable exit codes. `apt` is designed for interactive use and its output format can change between releases. `apt-get dist-upgrade` is used when `-RecursiveInclude` is passed — this matches the PSWindowsUpdate behavior of pulling in new dependencies.
+
+**`/var/log/dpkg.log`** is the most reliable source for package history. It logs every install, upgrade, and remove with timestamps in a consistent format. `Get-LinuxUpdateHistory` parses this file, filters for `install` and `upgrade` actions, and sorts newest-first.
+
+### Key gotchas
+
+**The "Listing..." header line.** `apt list --upgradable 2>/dev/null` always emits a `Listing...` line before the package list. If you pipe straight into a parser without filtering it out, you get a broken first object. The fix is a `Where-Object { $_ -notmatch '^Listing' }` before parsing. Easy fix, annoying to discover.
+
+**PSWindowsUpdate alias naming.** The Windows cmdlets are called `Get-WindowsUpdate`, `Install-WindowsUpdate`, `Get-WUHistory`. The aliases need to match exactly — including the `WU` prefix variations. Some PSWindowsUpdate cmdlets use `Get-WU*` rather than `Get-Windows*` (e.g. `Get-WUHistory`, `Get-WUApiVersion`). The alias table has to cover both patterns.
+
+**dpkg.log action verbs.** dpkg.log uses `install`, `upgrade`, `remove`, `purge`, and `configure` as action words. `Get-LinuxUpdateHistory` filters for `install` and `upgrade` only — `configure` is a post-install step that would otherwise double-count every install.
+
+**Reboot detection.** `Install-LinuxUpdate -AutoReboot` checks `/var/run/reboot-required` after the upgrade. This file is created by `apt-get` when a reboot is needed (kernel updates, etc.). If present and `-AutoReboot` was passed, the module calls `shutdown -r now`.
+
+### Naming strategy
+
+Linux-native function names (`Get-LinuxUpdate`, `Install-LinuxUpdate`, `Get-LinuxUpdateHistory`) are the actual implementations. PSWindowsUpdate names are aliases pointing at them. This means `Get-Command Get-WindowsUpdate` shows the alias, and the underlying code lives in a sensibly named function. It also means you can use the Linux-native names in new scripts and be explicit about platform intent.
+
+### Test approach
+
+Tests use Pester 5.2+ with `BeforeDiscovery` for platform detection. On Windows, all test blocks are skipped. On WSL2/Linux, the full suite runs. The tests mock `apt list --upgradable` and `dpkg.log` parsing rather than running actual apt commands — keeping tests deterministic and not requiring sudo. Examples are tested via `Examples\Examples.Tests.ps1` which runs each example script and verifies it doesn't throw.
+
+---
+
 ## License
 
 [GNU General Public License v3.0](LICENSE)
