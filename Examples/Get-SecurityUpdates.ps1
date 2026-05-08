@@ -15,7 +15,7 @@ if ($IsLinux) {
     Import-Module $modulePath -Force -ErrorAction Stop
 }
 
-$security = Get-WindowsUpdate | Where-Object { $_.Repository -like '*security*' }
+$security = Get-LinuxUpdate | Where-Object { $_.Repository -like '*security*' }
 
 if (-not $security) {
     Write-Host "No security updates available."

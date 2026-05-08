@@ -7,16 +7,20 @@ Scripts written for Windows using `Get-WindowsUpdate` / `Install-WindowsUpdate` 
 
 ## What it does
 
-`Update.Linux` wraps `apt` and `dpkg` to give PowerShell cmdlets that mirror the PSWindowsUpdate module:
+`Update.Linux` wraps `apt` and `dpkg` to give PowerShell cmdlets that mirror the PSWindowsUpdate module.  
+Functions use Linux-appropriate names; **PSWindowsUpdate aliases are included** so existing Windows scripts run unmodified.
 
-| Cmdlet | Status | Linux tool |
-|---|---|---|
-| `Get-WindowsUpdate` | ✅ Implemented | `apt list --upgradable` |
-| `Install-WindowsUpdate` | ✅ Implemented | `apt-get upgrade` / `apt-get install` |
-| `Get-WUHistory` | ✅ Implemented | `/var/log/dpkg.log` |
-| All other 19 PSWindowsUpdate cmdlets | 🔧 Stub | — |
+| Linux-native cmdlet | PSWindowsUpdate alias | Status | Linux tool |
+|---|---|---|---|
+| `Get-LinuxUpdate` | `Get-WindowsUpdate` | ✅ Implemented | `apt list --upgradable` |
+| `Install-LinuxUpdate` | `Install-WindowsUpdate` | ✅ Implemented | `apt-get upgrade` / `apt-get install` |
+| `Get-LinuxUpdateHistory` | `Get-WUHistory` | ✅ Implemented | `/var/log/dpkg.log` |
+| `Hide-LinuxUpdate` | `Hide-WindowsUpdate` | 🔧 Stub | — |
+| `Remove-LinuxUpdate` | `Remove-WindowsUpdate` | 🔧 Stub | — |
+| `Show-LinuxUpdate` | `Show-WindowsUpdate` | 🔧 Stub | — |
+| All other 13 `WU*` cmdlets | _(same name)_ | 🔧 Stub | — |
 
-The module is **Linux-only**. On Linux, `Get-WindowsUpdate`, `Install-WindowsUpdate`, and `Get-WUHistory` delegate to Windows implementations if PSWindowsUpdate is installed; on Linux they use native apt/dpkg.
+The module is **Linux-only**. On Windows, the implemented cmdlets delegate to PSWindowsUpdate if installed.
 
 ---
 
@@ -44,25 +48,31 @@ Import-Module ./Update.Linux/Update.Linux/Update.Linux.psd1
 ## Usage
 
 ```powershell
-# List all available updates
+# List all available updates (Linux-native name)
+Get-LinuxUpdate
+
+# Same call using the PSWindowsUpdate parity alias
 Get-WindowsUpdate
 
 # Filter by package name
-Get-WindowsUpdate -Title 'bash'
-Get-WindowsUpdate -Title 'lib*'
+Get-LinuxUpdate -Title 'bash'
+Get-LinuxUpdate -Title 'lib*'
 
-# Show package history
-Get-WUHistory
+# Show package history (Linux-native name)
+Get-LinuxUpdateHistory
+Get-LinuxUpdateHistory -Last 50
+
+# Same call using the PSWindowsUpdate parity alias
 Get-WUHistory -Last 50
 
 # Install all updates (requires sudo/root)
-Install-WindowsUpdate -AcceptAll
+Install-LinuxUpdate -AcceptAll
 
 # Install specific packages
-Install-WindowsUpdate -Title 'bash' -AcceptAll
+Install-LinuxUpdate -Title 'bash' -AcceptAll
 
 # Check for reboot requirement after upgrade
-Install-WindowsUpdate -AcceptAll -AutoReboot
+Install-LinuxUpdate -AcceptAll -AutoReboot
 ```
 
 ---
@@ -84,27 +94,35 @@ See [`Examples\`](Examples/) for ready-to-run scripts:
 
 ### Fully Implemented
 
-| Cmdlet | Parameters |
-|---|---|
-| `Get-WindowsUpdate` | `-Title`, `-NotTitle`, `-Category` |
-| `Install-WindowsUpdate` | `-Title`, `-AcceptAll`, `-AutoReboot`, `-IgnoreReboot`, `-RecursiveInclude` |
-| `Get-WUHistory` | `-Last` |
+| Linux-native cmdlet | PSWindowsUpdate alias | Parameters |
+|---|---|---|
+| `Get-LinuxUpdate` | `Get-WindowsUpdate` | `-Title`, `-NotTitle`, `-Category` |
+| `Install-LinuxUpdate` | `Install-WindowsUpdate` | `-Title`, `-AcceptAll`, `-AutoReboot`, `-IgnoreReboot`, `-RecursiveInclude` |
+| `Get-LinuxUpdateHistory` | `Get-WUHistory` | `-Last` |
 
-### Stubs (not yet implemented — PRs welcome)
+### Stubs with aliases (not yet implemented — PRs welcome)
+
+| Linux-native cmdlet | PSWindowsUpdate alias |
+|---|---|
+| `Hide-LinuxUpdate` | `Hide-WindowsUpdate` |
+| `Remove-LinuxUpdate` | `Remove-WindowsUpdate` |
+| `Show-LinuxUpdate` | `Show-WindowsUpdate` |
+
+### Stubs without rename (WU-prefixed — not yet implemented)
 
 `Add-WUServiceManager`, `Disable-WURemoting`, `Enable-WURemoting`, `Get-WUApiVersion`,
 `Get-WUInstallerStatus`, `Get-WUJob`, `Get-WULastResults`, `Get-WURebootStatus`,
-`Get-WUServiceManager`, `Get-WUSettings`, `Hide-WindowsUpdate`, `Invoke-WUJob`,
-`Remove-WindowsUpdate`, `Remove-WUServiceManager`, `Reset-WUComponents`, `Set-PSWUSettings`,
-`Set-WUSettings`, `Show-WindowsUpdate`, `Update-WUModule`
+`Get-WUServiceManager`, `Get-WUSettings`, `Invoke-WUJob`, `Remove-WUServiceManager`,
+`Reset-WUComponents`, `Set-PSWUSettings`, `Set-WUSettings`, `Update-WUModule`
 
 ---
 
 ## Implementation Notes
 
-- `Get-WindowsUpdate` skips the `Listing...` header line emitted by `apt list --upgradable 2>/dev/null`
-- `Get-WUHistory` parses `/var/log/dpkg.log` and returns entries sorted newest-first
-- `Install-WindowsUpdate -RecursiveInclude` uses `apt-get dist-upgrade` for full dependency resolution
+- Functions use Linux-appropriate names (`Get-LinuxUpdate`, etc.); PSWindowsUpdate aliases (`Get-WindowsUpdate`, etc.) are exported for drop-in compatibility
+- `Get-LinuxUpdate` skips the `Listing...` header line emitted by `apt list --upgradable 2>/dev/null`
+- `Get-LinuxUpdateHistory` parses `/var/log/dpkg.log` and returns entries sorted newest-first
+- `Install-LinuxUpdate -RecursiveInclude` uses `apt-get dist-upgrade` for full dependency resolution
 - The module throws a descriptive error if loaded on Windows (Linux-only guard in `.psm1`)
 - Output objects use `[PSCustomObject]` to match PSWindowsUpdate property shapes
 
@@ -114,7 +132,8 @@ See [`Examples\`](Examples/) for ready-to-run scripts:
 
 | Version | Date | Notes |
 |---|---|---|
-| 0.1.0 | 2026-05-08 | Initial release: Get-WindowsUpdate, Install-WindowsUpdate, Get-WUHistory + 19 stubs |
+| 0.2.0 | 2026-05-08 | Renamed core functions to Linux-native names; added PSWindowsUpdate aliases for parity |
+| 0.1.0 | 2026-05-08 | Initial release |
 
 ---
 

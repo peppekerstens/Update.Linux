@@ -3,7 +3,7 @@
 .Synopsis
     Pester tests for Update.Linux module.
 .Description
-    Validates module structure, function exports, and runtime behaviour.
+    Validates module structure, function exports, alias exports, and runtime behaviour.
     Linux-only execution tests are guarded with -Skip:(-not $IsLinux).
     All tests run on Windows (syntax/structure checks); live execution
     tests are skipped on Windows.
@@ -15,13 +15,13 @@
 
 BeforeDiscovery {
     $script:ModuleRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path $PSCommandPath -Parent }
-    $script:ManifestPath = Join-Path $script:ModuleRoot 'Update.Linux.psd1'
-    $script:PsmPath      = Join-Path $script:ModuleRoot 'Update.Linux.psm1'
 
     $script:ExpectedFunctions = @(
-        'Get-WindowsUpdate',
-        'Install-WindowsUpdate',
-        'Get-WUHistory',
+        # Implemented — Linux-native names
+        'Get-LinuxUpdate',
+        'Install-LinuxUpdate',
+        'Get-LinuxUpdateHistory',
+        # Stubs
         'Add-WUServiceManager',
         'Disable-WURemoting',
         'Enable-WURemoting',
@@ -32,15 +32,24 @@ BeforeDiscovery {
         'Get-WURebootStatus',
         'Get-WUServiceManager',
         'Get-WUSettings',
-        'Hide-WindowsUpdate',
+        'Hide-LinuxUpdate',
         'Invoke-WUJob',
-        'Remove-WindowsUpdate',
+        'Remove-LinuxUpdate',
         'Remove-WUServiceManager',
         'Reset-WUComponents',
         'Set-PSWUSettings',
         'Set-WUSettings',
-        'Show-WindowsUpdate',
+        'Show-LinuxUpdate',
         'Update-WUModule'
+    )
+
+    $script:ExpectedAliases = @(
+        'Get-WindowsUpdate',
+        'Install-WindowsUpdate',
+        'Get-WUHistory',
+        'Hide-WindowsUpdate',
+        'Remove-WindowsUpdate',
+        'Show-WindowsUpdate'
     )
 }
 
@@ -84,6 +93,12 @@ Describe 'Module manifest is valid' {
             $m.FunctionsToExport | Should -Contain $fn
         }
     }
+    It 'AliasesToExport contains all expected aliases' {
+        $m = Import-PowerShellDataFile $script:ManifestPath
+        foreach ($alias in $script:ExpectedAliases) {
+            $m.AliasesToExport | Should -Contain $alias
+        }
+    }
 }
 
 Describe 'Function files exist and have no syntax errors' {
@@ -105,14 +120,17 @@ Describe 'Module loads on Linux' -Skip:(-not $IsLinux) {
     It 'module is importable' {
         Get-Module Update.Linux | Should -Not -BeNullOrEmpty
     }
-    It 'all expected functions are exported' -ForEach $script:ExpectedFunctions {
+    It 'Linux-native function <_> is exported' -ForEach $script:ExpectedFunctions {
         Get-Command $_ -Module Update.Linux | Should -Not -BeNullOrEmpty
+    }
+    It 'alias <_> is exported' -ForEach $script:ExpectedAliases {
+        Get-Alias $_ -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
     }
 }
 
-Describe 'Get-WindowsUpdate' -Skip:(-not $IsLinux) {
+Describe 'Get-LinuxUpdate' -Skip:(-not $IsLinux) {
     It 'returns objects or empty collection without error' {
-        { $script:updates = Get-WindowsUpdate } | Should -Not -Throw
+        { $script:updates = Get-LinuxUpdate } | Should -Not -Throw
     }
     It 'each object has required properties' {
         if ($script:updates) {
@@ -133,8 +151,8 @@ Describe 'Get-WindowsUpdate' -Skip:(-not $IsLinux) {
     }
     It '-Title filter narrows results' {
         if ($script:updates) {
-            $pkg   = $script:updates[0].Title
-            $filt  = Get-WindowsUpdate -Title $pkg
+            $pkg  = $script:updates[0].Title
+            $filt = Get-LinuxUpdate -Title $pkg
             $filt | Should -Not -BeNullOrEmpty
             $filt | ForEach-Object { $_.Title | Should -Be $pkg }
         } else {
@@ -142,14 +160,18 @@ Describe 'Get-WindowsUpdate' -Skip:(-not $IsLinux) {
         }
     }
     It '-Title wildcard with no match returns empty' {
-        $result = Get-WindowsUpdate -Title 'zzz-nonexistent-package-xyzzy'
+        $result = Get-LinuxUpdate -Title 'zzz-nonexistent-package-xyzzy'
         $result | Should -BeNullOrEmpty
+    }
+    It 'alias Get-WindowsUpdate resolves to the same cmdlet' {
+        $alias = Get-Alias 'Get-WindowsUpdate' -ErrorAction SilentlyContinue
+        $alias.ResolvedCommandName | Should -Be 'Get-LinuxUpdate'
     }
 }
 
-Describe 'Get-WUHistory' -Skip:(-not $IsLinux) {
+Describe 'Get-LinuxUpdateHistory' -Skip:(-not $IsLinux) {
     It 'returns objects without error' {
-        { $script:history = Get-WUHistory } | Should -Not -Throw
+        { $script:history = Get-LinuxUpdateHistory } | Should -Not -Throw
     }
     It 'returns at most -Last entries (default 25)' {
         ($script:history | Measure-Object).Count | Should -BeLessOrEqual 25
@@ -171,7 +193,7 @@ Describe 'Get-WUHistory' -Skip:(-not $IsLinux) {
         }
     }
     It '-Last 5 returns at most 5 entries' {
-        $result = Get-WUHistory -Last 5
+        $result = Get-LinuxUpdateHistory -Last 5
         ($result | Measure-Object).Count | Should -BeLessOrEqual 5
     }
     It 'results are sorted descending by date' {
@@ -181,6 +203,10 @@ Describe 'Get-WUHistory' -Skip:(-not $IsLinux) {
             }
         }
     }
+    It 'alias Get-WUHistory resolves to the same cmdlet' {
+        $alias = Get-Alias 'Get-WUHistory' -ErrorAction SilentlyContinue
+        $alias.ResolvedCommandName | Should -Be 'Get-LinuxUpdateHistory'
+    }
 }
 
 Describe 'Stub functions emit warnings' -Skip:(-not $IsLinux) {
@@ -188,9 +214,9 @@ Describe 'Stub functions emit warnings' -Skip:(-not $IsLinux) {
         'Add-WUServiceManager', 'Disable-WURemoting', 'Enable-WURemoting',
         'Get-WUApiVersion', 'Get-WUInstallerStatus', 'Get-WUJob',
         'Get-WULastResults', 'Get-WURebootStatus', 'Get-WUServiceManager',
-        'Get-WUSettings', 'Hide-WindowsUpdate', 'Invoke-WUJob',
-        'Remove-WindowsUpdate', 'Remove-WUServiceManager', 'Reset-WUComponents',
-        'Set-PSWUSettings', 'Set-WUSettings', 'Show-WindowsUpdate',
+        'Get-WUSettings', 'Hide-LinuxUpdate', 'Invoke-WUJob',
+        'Remove-LinuxUpdate', 'Remove-WUServiceManager', 'Reset-WUComponents',
+        'Set-PSWUSettings', 'Set-WUSettings', 'Show-LinuxUpdate',
         'Update-WUModule'
     ) {
         { & $_ -WarningAction SilentlyContinue } | Should -Not -Throw

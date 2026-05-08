@@ -15,7 +15,7 @@ if ($IsLinux) {
     Import-Module $modulePath -Force -ErrorAction Stop
 }
 
-$history = Get-WUHistory -Last 20
+$history = Get-LinuxUpdateHistory -Last 20
 if (-not $history) {
     Write-Host "No package history found in /var/log/dpkg.log."
 } else {

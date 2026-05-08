@@ -1,12 +1,13 @@
-function Install-WindowsUpdate {
+function Install-LinuxUpdate {
     <#
     .Synopsis
         Installs available package updates.
     .Description
-        Cross-platform implementation of Install-WindowsUpdate (PSWindowsUpdate).
-        On Windows, delegates to PSWindowsUpdate\Install-WindowsUpdate.
+        Installs available package updates on this Linux system.
+        On Windows, delegates to PSWindowsUpdate\Install-WindowsUpdate if installed.
         On Linux, wraps 'apt-get upgrade' (or 'apt-get dist-upgrade' with -RecursiveInclude)
         to apply all available updates. Requires root or sudo privileges.
+        Alias: Install-WindowsUpdate (for PSWindowsUpdate cmdlet parity)
     .Parameter Title
         Install only packages matching this pattern (wildcard). Default: all upgradable packages.
     .Parameter AcceptAll
@@ -20,7 +21,7 @@ function Install-WindowsUpdate {
     .Notes
         Free to use under GNU v3 Public License (https://choosealicense.com/licenses/gpl-3.0/)
         Author: Peppe Kerstens (NLD)
-        Version: 1.0.0
+        Version: 0.2.0
         Date: 2026-05-08
     .Link
         https://learn.microsoft.com/powershell/module/pswindowsupdate/install-windowsupdate
@@ -43,22 +44,22 @@ function Install-WindowsUpdate {
         if (Get-Module PSWindowsUpdate -ListAvailable -ErrorAction SilentlyContinue) {
             PSWindowsUpdate\Install-WindowsUpdate @PSBoundParameters
         } else {
-            Write-Warning "Install-WindowsUpdate: PSWindowsUpdate module is not installed. Install it from PSGallery: Install-Module PSWindowsUpdate"
+            Write-Warning "Install-LinuxUpdate: PSWindowsUpdate module is not installed. Install it from PSGallery: Install-Module PSWindowsUpdate"
         }
         return
     }
 
     if (-not (Get-Command apt-get -ErrorAction SilentlyContinue)) {
-        Write-Warning "Install-WindowsUpdate: 'apt-get' not found. This cmdlet requires a Debian/Ubuntu system."
+        Write-Warning "Install-LinuxUpdate: 'apt-get' not found. This cmdlet requires a Debian/Ubuntu system."
         return
     }
 
     # Determine which packages to install
     if ($Title) {
         # Get matching upgradable packages
-        $packages = Get-WindowsUpdate -Title $Title | Select-Object -ExpandProperty Title
+        $packages = Get-LinuxUpdate -Title $Title | Select-Object -ExpandProperty Title
         if (-not $packages) {
-            Write-Verbose "Install-WindowsUpdate: No packages match '$Title'."
+            Write-Verbose "Install-LinuxUpdate: No packages match '$Title'."
             return
         }
         $targetDesc = "packages matching '$Title': $($packages -join ', ')"
@@ -67,7 +68,7 @@ function Install-WindowsUpdate {
         $targetDesc = "all upgradable packages"
     }
 
-    if ($PSCmdlet.ShouldProcess($targetDesc, 'Install-WindowsUpdate')) {
+    if ($PSCmdlet.ShouldProcess($targetDesc, 'Install-LinuxUpdate')) {
         $aptCmd  = if ($RecursiveInclude) { 'dist-upgrade' } else { 'upgrade' }
         $aptArgs = @($aptCmd)
         if ($AcceptAll) { $aptArgs += '-y' }
@@ -81,7 +82,7 @@ function Install-WindowsUpdate {
         & apt-get @aptArgs
 
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "Install-WindowsUpdate: apt-get exited with code $LASTEXITCODE"
+            Write-Error "Install-LinuxUpdate: apt-get exited with code $LASTEXITCODE"
             return
         }
 
@@ -89,10 +90,10 @@ function Install-WindowsUpdate {
         $rebootRequired = Test-Path '/var/run/reboot-required'
         if ($rebootRequired -and -not $IgnoreReboot) {
             if ($AutoReboot) {
-                Write-Warning "Install-WindowsUpdate: Reboot required. Rebooting now..."
+                Write-Warning "Install-LinuxUpdate: Reboot required. Rebooting now..."
                 & shutdown -r 0
             } else {
-                Write-Warning "Install-WindowsUpdate: Reboot required to complete updates. Run 'Restart-Computer' or reboot manually."
+                Write-Warning "Install-LinuxUpdate: Reboot required to complete updates. Run 'Restart-Computer' or reboot manually."
             }
         }
     }

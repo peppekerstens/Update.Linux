@@ -1,11 +1,12 @@
-function Get-WindowsUpdate {
+function Get-LinuxUpdate {
     <#
     .Synopsis
         Lists available package updates.
     .Description
-        Cross-platform implementation of Get-WindowsUpdate (PSWindowsUpdate).
-        On Windows, delegates to PSWindowsUpdate\Get-WindowsUpdate.
+        Lists packages available for upgrade on this Linux system.
+        On Windows, delegates to PSWindowsUpdate\Get-WindowsUpdate if installed.
         On Linux, wraps 'apt list --upgradable' to return available package updates.
+        Alias: Get-WindowsUpdate (for PSWindowsUpdate cmdlet parity)
     .Parameter Title
         Filter by package name (wildcard supported).
     .Parameter NotTitle
@@ -15,7 +16,7 @@ function Get-WindowsUpdate {
     .Notes
         Free to use under GNU v3 Public License (https://choosealicense.com/licenses/gpl-3.0/)
         Author: Peppe Kerstens (NLD)
-        Version: 1.0.0
+        Version: 0.2.0
         Date: 2026-05-08
     .Link
         https://learn.microsoft.com/powershell/module/pswindowsupdate/get-windowsupdate
@@ -37,13 +38,13 @@ function Get-WindowsUpdate {
         if (Get-Module PSWindowsUpdate -ListAvailable -ErrorAction SilentlyContinue) {
             PSWindowsUpdate\Get-WindowsUpdate @PSBoundParameters
         } else {
-            Write-Warning "Get-WindowsUpdate: PSWindowsUpdate module is not installed. Install it from PSGallery: Install-Module PSWindowsUpdate"
+            Write-Warning "Get-LinuxUpdate: PSWindowsUpdate module is not installed. Install it from PSGallery: Install-Module PSWindowsUpdate"
         }
         return
     }
 
     if (-not (Get-Command apt -ErrorAction SilentlyContinue)) {
-        Write-Warning "Get-WindowsUpdate: 'apt' not found. This cmdlet requires a Debian/Ubuntu system."
+        Write-Warning "Get-LinuxUpdate: 'apt' not found. This cmdlet requires a Debian/Ubuntu system."
         return
     }
 

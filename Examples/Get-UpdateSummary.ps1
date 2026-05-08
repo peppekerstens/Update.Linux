@@ -16,7 +16,7 @@ if ($IsLinux) {
 }
 
 Write-Host "=== Available Updates ==="
-$updates = Get-WindowsUpdate
+$updates = Get-LinuxUpdate
 if ($updates) {
     $updates | Group-Object Repository | Sort-Object Count -Descending |
         Select-Object @{N='Repository';E={$_.Name}}, @{N='Packages';E={$_.Count}} |
@@ -28,7 +28,7 @@ if ($updates) {
 
 Write-Host ""
 Write-Host "=== Recent Package Actions (last 10) ==="
-$history = Get-WUHistory -Last 10
+$history = Get-LinuxUpdateHistory -Last 10
 if ($history) {
     $history | Select-Object Date, Action, Title, Version | Format-Table -AutoSize
 } else {

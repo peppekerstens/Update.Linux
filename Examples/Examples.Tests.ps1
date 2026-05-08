@@ -54,9 +54,8 @@ Describe 'Get-AvailableUpdates' {
     It 'script file exists' {
         Join-Path $script:ExamplesDir 'Get-AvailableUpdates.ps1' | Should -Exist
     }
-    It 'Get-WindowsUpdate returns objects with required properties' -Skip:(-not $IsLinux) {
-        $result = Get-WindowsUpdate
-        # Could be empty if system is up to date — both are valid
+    It 'Get-LinuxUpdate returns objects with required properties' -Skip:(-not $IsLinux) {
+        $result = Get-LinuxUpdate
         if ($result) {
             $result[0].PSObject.Properties.Name | Should -Contain 'Title'
             $result[0].PSObject.Properties.Name | Should -Contain 'Version'
@@ -68,10 +67,13 @@ Describe 'Get-AvailableUpdates' {
         }
     }
     It 'IsInstalled is always false for upgradable packages' -Skip:(-not $IsLinux) {
-        $result = Get-WindowsUpdate
+        $result = Get-LinuxUpdate
         foreach ($u in $result) {
             $u.IsInstalled | Should -Be $false
         }
+    }
+    It 'alias Get-WindowsUpdate works as a parity alias' -Skip:(-not $IsLinux) {
+        { Get-WindowsUpdate } | Should -Not -Throw
     }
 }
 
@@ -79,12 +81,12 @@ Describe 'Get-PackageHistory' {
     It 'script file exists' {
         Join-Path $script:ExamplesDir 'Get-PackageHistory.ps1' | Should -Exist
     }
-    It 'Get-WUHistory returns at most 20 entries' -Skip:(-not $IsLinux) {
-        $result = Get-WUHistory -Last 20
+    It 'Get-LinuxUpdateHistory returns at most 20 entries' -Skip:(-not $IsLinux) {
+        $result = Get-LinuxUpdateHistory -Last 20
         ($result | Measure-Object).Count | Should -BeLessOrEqual 20
     }
     It 'each history entry has Date, Action, Title, Version' -Skip:(-not $IsLinux) {
-        $result = Get-WUHistory -Last 5
+        $result = Get-LinuxUpdateHistory -Last 5
         foreach ($h in $result) {
             $h.PSObject.Properties.Name | Should -Contain 'Date'
             $h.PSObject.Properties.Name | Should -Contain 'Action'
@@ -93,10 +95,13 @@ Describe 'Get-PackageHistory' {
         }
     }
     It 'Date values are [datetime] objects' -Skip:(-not $IsLinux) {
-        $result = Get-WUHistory -Last 5
+        $result = Get-LinuxUpdateHistory -Last 5
         foreach ($h in $result) {
             $h.Date | Should -BeOfType [datetime]
         }
+    }
+    It 'alias Get-WUHistory works as a parity alias' -Skip:(-not $IsLinux) {
+        { Get-WUHistory -Last 5 } | Should -Not -Throw
     }
 }
 
@@ -105,7 +110,7 @@ Describe 'Get-SecurityUpdates' {
         Join-Path $script:ExamplesDir 'Get-SecurityUpdates.ps1' | Should -Exist
     }
     It 'security filter returns only packages from security repos' -Skip:(-not $IsLinux) {
-        $security = Get-WindowsUpdate | Where-Object { $_.Repository -like '*security*' }
+        $security = Get-LinuxUpdate | Where-Object { $_.Repository -like '*security*' }
         foreach ($s in $security) {
             $s.Repository | Should -BeLike '*security*'
         }
@@ -116,12 +121,12 @@ Describe 'Get-UpdateSummary' {
     It 'script file exists' {
         Join-Path $script:ExamplesDir 'Get-UpdateSummary.ps1' | Should -Exist
     }
-    It 'Get-WindowsUpdate result count matches expected count' -Skip:(-not $IsLinux) {
-        $all = Get-WindowsUpdate
+    It 'Get-LinuxUpdate result count is non-negative' -Skip:(-not $IsLinux) {
+        $all = Get-LinuxUpdate
         ($all | Measure-Object).Count | Should -BeGreaterOrEqual 0
     }
-    It 'Get-WUHistory -Last 10 returns at most 10 entries' -Skip:(-not $IsLinux) {
-        $h = Get-WUHistory -Last 10
+    It 'Get-LinuxUpdateHistory -Last 10 returns at most 10 entries' -Skip:(-not $IsLinux) {
+        $h = Get-LinuxUpdateHistory -Last 10
         ($h | Measure-Object).Count | Should -BeLessOrEqual 10
     }
 }

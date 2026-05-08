@@ -17,7 +17,7 @@ if ($IsLinux) {
     Import-Module $modulePath -Force -ErrorAction Stop
 }
 
-$updates = Get-WindowsUpdate
+$updates = Get-LinuxUpdate
 if (-not $updates) {
     Write-Host "No upgradable packages found. System is up to date."
 } else {

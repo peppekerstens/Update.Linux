@@ -21,3 +21,12 @@ $functionFiles = Get-ChildItem -Path $functionPath -Filter '*.ps1' -ErrorAction 
 foreach ($file in $functionFiles) {
     . $file.FullName
 }
+
+# PSWindowsUpdate / WU compatibility aliases
+# These allow scripts written for PSWindowsUpdate to run unmodified on Linux.
+Set-Alias -Name 'Get-WindowsUpdate'     -Value 'Get-LinuxUpdate'
+Set-Alias -Name 'Install-WindowsUpdate' -Value 'Install-LinuxUpdate'
+Set-Alias -Name 'Get-WUHistory'         -Value 'Get-LinuxUpdateHistory'
+Set-Alias -Name 'Hide-WindowsUpdate'    -Value 'Hide-LinuxUpdate'
+Set-Alias -Name 'Remove-WindowsUpdate'  -Value 'Remove-LinuxUpdate'
+Set-Alias -Name 'Show-WindowsUpdate'    -Value 'Show-LinuxUpdate'
