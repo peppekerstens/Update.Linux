@@ -1,0 +1,16 @@
+# Byte-order mark and generated files
+*.swp
+*~
+
+# PowerShell
+*.ps1xml~
+
+# Test result files
+TestResults*.xml
+
+# VS Code
+.vscode/
+
+# Temporary files
+Temp/
+temp/
