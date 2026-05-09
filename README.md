@@ -1,5 +1,7 @@
 # Update.Linux
 
+[![Pester Tests](https://github.com/peppekerstens/Update.Linux/actions/workflows/pester.yml/badge.svg)](https://github.com/peppekerstens/Update.Linux/actions/workflows/pester.yml)
+
 PowerShell module providing Linux-native cmdlet parity with **PSWindowsUpdate**.  
 Scripts written for Windows using `Get-WindowsUpdate` / `Install-WindowsUpdate` work on Linux without modification.
 
@@ -128,7 +130,29 @@ See [`Examples\`](Examples/) for ready-to-run scripts:
 
 ---
 
-## Version History
+## CI / Testing
+
+Tested across 5 Linux distributions in containers:
+
+| Distro | Image |
+|---|---|
+| Ubuntu 24.04 | `ghcr.io/peppekerstens/testinfra:ubuntu-24.04` |
+| Debian 12 | `ghcr.io/peppekerstens/testinfra:debian-12` |
+| Fedora 40 | `ghcr.io/peppekerstens/testinfra:fedora-40` |
+| openSUSE Tumbleweed | `ghcr.io/peppekerstens/testinfra:opensuse-tumbleweed` |
+| Arch Linux | `ghcr.io/peppekerstens/testinfra:arch-latest` |
+
+Run locally with:
+
+```powershell
+# From the repo root
+docker compose -f docker-compose.test.yml up --abort-on-container-exit
+```
+
+GitHub Actions runs the same matrix on every push — see `.github/workflows/pester.yml`.
+---
+
+## Version history
 
 | Version | Date | Notes |
 |---|---|---|
