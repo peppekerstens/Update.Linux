@@ -213,12 +213,69 @@ Describe 'Stub functions emit warnings' -Skip:(-not $IsLinux) {
     It '<_> emits a warning and does not throw' -ForEach @(
         'Add-WUServiceManager', 'Disable-WURemoting', 'Enable-WURemoting',
         'Get-WUApiVersion', 'Get-WUInstallerStatus', 'Get-WUJob',
-        'Get-WULastResults', 'Get-WURebootStatus', 'Get-WUServiceManager',
-        'Get-WUSettings', 'Hide-LinuxUpdate', 'Invoke-WUJob',
-        'Remove-LinuxUpdate', 'Remove-WUServiceManager', 'Reset-WUComponents',
-        'Set-PSWUSettings', 'Set-WUSettings', 'Show-LinuxUpdate',
+        'Get-WUServiceManager',
+        'Get-WUSettings', 'Invoke-WUJob',
+        'Remove-WUServiceManager', 'Reset-WUComponents',
+        'Set-PSWUSettings', 'Set-WUSettings',
         'Update-WUModule'
     ) {
         { & $_ -WarningAction SilentlyContinue } | Should -Not -Throw
+    }
+}
+
+Describe 'Get-WURebootStatus' -Skip:(-not $IsLinux) {
+    It 'returns a result object without error' {
+        { $script:reboot = Get-WURebootStatus } | Should -Not -Throw
+    }
+    It 'has RebootRequired property (bool)' {
+        $script:reboot.PSObject.Properties.Name | Should -Contain 'RebootRequired'
+        $script:reboot.RebootRequired | Should -BeOfType [bool]
+    }
+    It 'has RebootPackages property (array)' {
+        $script:reboot.PSObject.Properties.Name | Should -Contain 'RebootPackages'
+    }
+}
+
+Describe 'Get-WULastResults' -Skip:(-not $IsLinux) {
+    It 'returns a result object without error' {
+        { $script:lastResults = Get-WULastResults } | Should -Not -Throw
+    }
+    It 'has LastCommandLine property' {
+        if ($script:lastResults) {
+            $script:lastResults.PSObject.Properties.Name | Should -Contain 'LastCommandLine'
+        } else {
+            Set-ItResult -Skipped -Because 'apt history log empty or not found'
+        }
+    }
+}
+
+Describe 'Hide-LinuxUpdate and Show-LinuxUpdate' -Skip:(-not $IsLinux) {
+    It 'Hide-LinuxUpdate supports -WhatIf without error' {
+        if (-not (Get-Command apt-mark -ErrorAction SilentlyContinue)) {
+            Set-ItResult -Skipped -Because 'apt-mark not found'
+            return
+        }
+        { Hide-LinuxUpdate -Name 'curl' -WhatIf } | Should -Not -Throw
+    }
+    It 'Show-LinuxUpdate supports -WhatIf without error' {
+        if (-not (Get-Command apt-mark -ErrorAction SilentlyContinue)) {
+            Set-ItResult -Skipped -Because 'apt-mark not found'
+            return
+        }
+        { Show-LinuxUpdate -Name 'curl' -WhatIf } | Should -Not -Throw
+    }
+}
+
+Describe 'Remove-LinuxUpdate' -Skip:(-not $IsLinux) {
+    It 'supports -WhatIf without error' {
+        if (-not (Get-Command apt-get -ErrorAction SilentlyContinue)) {
+            Set-ItResult -Skipped -Because 'apt-get not found'
+            return
+        }
+        { Remove-LinuxUpdate -Name 'curl' -WhatIf } | Should -Not -Throw
+    }
+    It 'alias Remove-WindowsUpdate resolves to the same cmdlet' {
+        $alias = Get-Alias 'Remove-WindowsUpdate' -ErrorAction SilentlyContinue
+        $alias.ResolvedCommandName | Should -Be 'Remove-LinuxUpdate'
     }
 }

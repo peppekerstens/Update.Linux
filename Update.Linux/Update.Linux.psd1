@@ -4,7 +4,7 @@
 
 @{
     RootModule        = 'Update.Linux.psm1'
-    ModuleVersion     = '0.2.0'
+    ModuleVersion     = '0.3.0'
     GUID              = 'b2c3d4e5-f6a7-8901-bcde-f12345678901'
     Author            = 'Peppe Kerstens'
     CompanyName       = ''
@@ -59,6 +59,7 @@
             LicenseUri   = 'https://github.com/peppekerstens/Update.Linux/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/peppekerstens/Update.Linux'
             ReleaseNotes = @'
+0.3.0 - Implement Get-WURebootStatus (/var/run/reboot-required), Get-WULastResults (/var/log/apt/history.log), Hide-LinuxUpdate (apt-mark hold), Show-LinuxUpdate (apt-mark unhold), Remove-LinuxUpdate (apt-get remove/purge). 14 stubs remain (Windows-only WU concepts).
 0.2.0 - Renamed core functions to Linux-native names (Get-LinuxUpdate, Install-LinuxUpdate, Get-LinuxUpdateHistory). Added PSWindowsUpdate aliases for cmdlet parity.
 0.1.0 - Initial release. Get-WindowsUpdate, Install-WindowsUpdate, Get-WUHistory implemented. Stubs for remaining 19 PSWindowsUpdate cmdlets.
 '@
